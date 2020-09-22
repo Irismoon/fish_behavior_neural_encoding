@@ -10,7 +10,7 @@ elseif ismember(datatype,{'behavior'})
     folderinfo = dir(folderpath);
     returnpath = fullfile(folderinfo.folder,folderinfo.name);
 elseif ismember(datatype,{'imaging'})
-    returnpath = fullfile('F:\Fish-Brain-Behavior-Analysis\results\imaging',sessionID,fishID);
+    returnpath = fullfile('F:\Fish-Brain-Behavior-Analysis\results\',sessionID,fishID,'1st section');
 else
     error('wrong query, datatype could be {neural activity,activity}. or {behavior} sessionID could be "200705" and fishID could be "1"/"2"/""');
 end
