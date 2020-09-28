@@ -43,7 +43,7 @@ while hasFrame(obj_low)
     end
 end
 
-fileName_MIP_DFoF = fullfile(getpath('imaging',sessionID,fishID),'MIP_DFoF_Stack.tif');
+fileName_MIP_DFoF = fullfile(getpath('imaging',sessionID,fishID),'MIP_DFoF_Stack_contrastAdjusted.tif');
 fileName_MIP_affine = fullfile(getpath('imaging',sessionID,fishID),'MIP_affine_stack.tif');
 %%
 idx_keep_frame_high = find(align_with_fluo_high);
@@ -68,19 +68,20 @@ obj_out = VideoWriter(fileName_out);
 open(obj_out);
 %% prepare the input and output files
 %% for each frame, read the pictures, plot, and put them together, write into a vedio
-imagInfo = imfinfo(fullfile(getpath('imaging',sessionID,fishID),'MIP_DFoF_stack_contrastAdjusted.tif'));
+imagInfo = imfinfo(fullfile(getpath('imaging',sessionID,fishID),'MIP_DFoF_Stack_contrastAdjusted.tif'));
 numt = length(imagInfo);
+fprintf('starting writing into movie...');
 for it = 1:numt
+    if mod(it,500)==0 disp(num2str(it)); end
     frame_high = vidFrame_high(:,:,:,it);%video is five times faster than imaging
     frame_low = vidFrame_low(:,:,:,it);
     frame_high = flip(frame_high,1);
     frame_low = flip(frame_low,1);
     frame_MIP_DFoF = imread(fileName_MIP_DFoF,it);
-    frame_MIP_DFoF = repmat(frame_MIP_DFoF,1,1,3);
+    frame_MIP_DFoF = repmat(uint8(double(frame_MIP_DFoF)/65535*256),1,1,3);%contrast adjusted
 %     frame_MIP_DFoF = uint8(repmat(double(frame_MIP_DFoF),1,1,3)*900/65535); % 3 channels, uint16 to uint8(all data above 255 will saturate, this will increase the brightness and decrease the contrast)
     frame_MIP_affine = imread(fileName_MIP_affine,it);
     frame_MIP_affine = repmat(frame_MIP_affine,1,1,3);
-%     frame_MIP_affine = uint8(repmat(double(frame_MIP_DFoF),1,1,3)*900/65535);
     
     for iBeh = 1:length(behavior_var)
         h = findobj(fig,'type','line','tag',behavior_var{iBeh}); % request the color of the relevant line
@@ -129,4 +130,5 @@ frame_out = uint8(zeros(height_out,width_out,3)); % add a blank frame to the end
 writeVideo(obj_out,frame_out);
 close(obj_out);
 close(fig);
+disp('done!');
 end
