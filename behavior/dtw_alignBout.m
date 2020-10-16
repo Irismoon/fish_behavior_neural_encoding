@@ -1,7 +1,7 @@
-function boutdist = dtw_alignBout()
+function boutdist = dtw_alignBout(postfix)
 %1.align bouts by dtw technique
 %2.get the distance from dtw as similarity metric between bouts
-load(fullfile(getpath('result'),'tail_pca'),'coeff','score','latent','bout_all','single_bout_len');
+load(fullfile(getpath('result'),['tail_pca' postfix]),'coeff','score','latent','bout_all','single_bout_len');
 ncomp = 3;
 numbout = length(single_bout_len);
 single_bout = arrayfun(@(iBout) bout_all(...
@@ -17,5 +17,5 @@ boutdist = zeros(numbout,numbout);
 boutdist(mask) = dist;
 boutdist = boutdist+boutdist';
 S = matdoc();
-save(fullfile(getpath('result'),'tail_boutdist'),'boutdist','S');
+save(fullfile(getpath('result'),['tail_boutdist' postfix]),'boutdist','S');
 end

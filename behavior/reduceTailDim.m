@@ -1,4 +1,4 @@
-function reduceTailDim()
+function reduceTailDim(postfix)
 %1.extract tail swing segment
 [sessionID,fishID] = getfish();
 numFish = length(sessionID);
@@ -22,7 +22,7 @@ assert(length(bout_all)==sum(single_bout_len),'the length must be the same!');
 bout_all = (cumsum(bout_all,2));%transform curvature to angle
 [coeff,score,latent,~,explained] = pca(bout_all);
 S = matdoc('comment','use eight fish');
-save(fullfile(getpath('result'),'tail_pca'),'coeff','score','latent','bout_all','single_bout_len');
+save(fullfile(getpath('result'),['tail_pca' postfix]),'coeff','score','latent','bout_all','single_bout_len');
 
 figure,
 plot(cumsum(explained));
