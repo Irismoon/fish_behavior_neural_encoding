@@ -1,6 +1,9 @@
-function plot_continuous_bouts(ax,bouts)
+function plot_continuous_bouts(bouts,ax)
 %function plot_continuous_bouts(ax,bouts)
 %bouts: t x tail x 2 segment
+if nargin<2
+    ax = gca;
+end
 bouts = permute(bouts,[2 1 3]);%tail x t x 2
 bouts(:,:,1) = bouts(:,:,1) - mean2(bouts(:,:,1));
 [numTail,numTime,numSide] = size(bouts);
