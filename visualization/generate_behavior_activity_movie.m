@@ -23,7 +23,7 @@ obj_high = VideoReader(fileName_high);
 fileinfo = dir(fullfile(parentpath,'*low_align_with_fluo.avi'));
 fileName_low = fullfile(fileinfo.folder,fileinfo.name);
 obj_low = VideoReader(fileName_low);
-
+%load high video
 nframe = 0;
 vidFrame_high = [];
 while hasFrame(obj_high)
@@ -33,6 +33,7 @@ while hasFrame(obj_high)
         vidFrame_high = cat(4,vidFrame_high,vidtmp);
     end
 end
+%load low video
 nframe = 0;
 vidFrame_low = [];
 while hasFrame(obj_low)
@@ -42,10 +43,11 @@ while hasFrame(obj_low)
         vidFrame_low = cat(4,vidFrame_low,vidtmp);
     end
 end
-
+%load MIP
 fileName_MIP_DFoF = fullfile(getpath('imaging',sessionID,fishID),'MIP_DFoF_Stack_contrastAdjusted.tif');
 fileName_MIP_affine = fullfile(getpath('imaging',sessionID,fishID),'MIP_affine_stack.tif');
 %%
+%load behavior data you want to plot
 idx_keep_frame_high = find(align_with_fluo_high);
 idx_keep_frame_high = idx_keep_frame_high(1:5:length(idx_keep_frame_high));
 filename = behvar2filename(behavior_var);

@@ -5,6 +5,7 @@ function returnpath = getpath(datatype,sessionID,fishID)
 [~,computer_name] = system('hostname');
 if ispc
     prepath = 'D:';
+    serverpath = 'Z:';
 elseif isunix
     prepath = '/home/hdd1';
 end
@@ -23,6 +24,15 @@ elseif ismember(datatype,{'code','Code'})
     returnpath = fullfile(prepath,'Mango_Wang','Code');
 elseif ismember(datatype,{'result','results'})
     returnpath = fullfile(prepath,'Mango_Wang','Result');
+elseif ismember(datatype,{'server_original','server_orig'})
+    folderpath = fullfile(serverpath,'Fish-Brain-Behavior-Analysis',[sessionID '_fish' num2str(fishID) '*']);
+    folderinfo = dir(folderpath);
+    assert(length(folderinfo)==1,'please specify the fish number');
+    returnpath = fullfile(folderinfo.folder,folderinfo.name);
+elseif ismember(datatype,{'server_analysis_result','server_analysis','server_behavior'})
+    folderpath = fullfile(serverpath,'Fish-Brain-Behavior-Analysis','analysis_result',[sessionID '_fish' num2str(fishID) '*']);
+    folderinfo = dir(folderpath);
+    returnpath = fullfile(folderinfo.folder,folderinfo.name);
 else
     error('wrong query, datatype could be {neural activity,activity}. or {behavior} sessionID could be "200705" and fishID could be "1"/"2"/""');
 end

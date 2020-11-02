@@ -6,7 +6,22 @@ bout_all_curv = cell(numFish,1);
 bout_all_xy = bout_all_curv;
 single_bout_len = cell(numFish,1);
 for iFish=1:numFish
+    %align low and high
+    
+    load(fullfile(getpath('behavior',sessionID{iFish},fishID{iFish}),'high_analysis'),'conv_or_not');
     load(fullfile(getpath('behavior',sessionID{iFish},fishID{iFish}),'tail_swing'),'curvdata','bout_idx','new_centerline_20');
+    if (length(conv_or_not)-length(curvdata))>-5 && (length(conv_or_not)-length(curvdata))<=0
+        conv_or_not = [conv_or_not;zeros(length(curvdata)-length(conv_or_not),1)];
+    elseif (length(conv_or_not)-length(curvdata))<5 && (length(conv_or_not)-length(curvdata))>0
+        conv_or_not(end:end-(length(conv_or_not) - length(curvdata))+1) = [];
+    else
+        load(fullfile(getpath('behavior',sessionID{iFish},fishID{iFish}),'align_with_fluo'));
+        conv_or_not = conv_or_not(align_with_fluo_high);
+        [curvdata,new_centerline_20] = samfnmultvar(@(x) x(align_with_fluo_low,:,:),curvdata,new_centerline_20);
+    end
+    %only select bouts with eye converge
+    conv_mask = arrayfun(@(i) mean(conv_or_not(bout_idx(i,1):bout_idx(i,2))),1:size(bout_idx,1),'un',0)>0;%
+    bout_idx = bout_idx(conv_mask,:);
     single_bout_len{iFish} = bout_idx(:,2) - bout_idx(:,1)+1;
     all_bout_len = sum(single_bout_len{iFish});
     single_fish_bout_curv = zeros(all_bout_len,20);
