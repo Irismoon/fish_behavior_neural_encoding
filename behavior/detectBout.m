@@ -1,5 +1,10 @@
 function bout_idx = detectBout(sessionID,fishID)
 load(fullfile(getpath('behavior',sessionID,fishID),'tail_swing'),'left_tail_swing','right_tail_swing','sum_curv');
+load(fullfile(getpath('behavior',sessionID,fishID),'high_analysis'),'conv_or_not');
+if abs(length(conv_or_not)-length(left_tail_swing))>5
+    load(fullfile(getpath('behavior',sessionID,fishID),'align_with_fluo'));
+    [left_tail_swing,right_tail_swing,sum_curv] = samfnmultvar(@(x) x(align_with_fluo_low==1,:,:),left_tail_swing,right_tail_swing,sum_curv);
+end
 tail_swing = left_tail_swing+abs(right_tail_swing);
 %detect continuous tail swing start and end
 diff_swing = diff(tail_swing);
