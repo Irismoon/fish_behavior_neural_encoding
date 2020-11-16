@@ -12,6 +12,9 @@ elseif strcmp(sessionID,'200108')
     A  = A3;
 end
 X_keep = X;
+if min(X_keep)<0
+    warning('The negative number will be treat as zero!');
+end
 X_keep_max = max(X_keep(:));
 X_keep = X_keep/X_keep_max*65535;
 for it=1:size(X_keep,2)
