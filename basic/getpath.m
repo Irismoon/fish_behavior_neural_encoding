@@ -15,7 +15,12 @@ elseif ismember(datatype,{'behavior'})
     folderpath = fullfile(prepath,'Fish-Brain-Behavior-Analysis','results','behaviour',...
         [sessionID '_fish' num2str(fishID) '*']);
     folderinfo = dir(folderpath);
-    returnpath = fullfile(folderinfo.folder,folderinfo.name);
+    if length(folderinfo)>1
+        idx = input(['There is ' length(folderinfo) ' fishes, please select which fish to use']);
+    else 
+        idx = 1;
+    end
+    returnpath = fullfile(folderinfo(idx).folder,folderinfo(idx).name);
 elseif ismember(datatype,{'imaging'})
     returnpath = fullfile(prepath,'Fish-Brain-Behavior-Analysis','results',sessionID,fishID,'1st section');
 elseif ismember(datatype,{'data'})

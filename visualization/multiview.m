@@ -1,0 +1,10 @@
+pausetime = 1;
+view(0,0);
+pause(pausetime);
+view(90,0);
+pause(pausetime);
+view(0,90);
+pause(pausetime);
+view(180,0);
+pause(pausetime);
+view(0,90);

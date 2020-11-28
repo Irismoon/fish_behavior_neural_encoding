@@ -2,16 +2,24 @@
 csessionID = '200108';cfishID = '';
 numT = 21;
 %%
-load(fullfile(getpath('behavior',csessionID,cfishID),'tail_swing'),'good_bout_idx');
+load(fullfile(getpath('behavior',csessionID,cfishID),'tail_swing'),'good_bout_idx','angledata');
 load(fullfile(getpath('behavior',csessionID,cfishID),'align_with_fluo'),'align_with_fluo_low');
-load(fullfile(getpath('behavior',csessionID,cfishID),'low_video_analysis_result'),'param_head_angle_all','param_head_dist_all');
+load(fullfile(getpath('behavior',csessionID,cfishID),'low_video_analysis_result'),'no_param','param_head_angle_all','param_head_dist_all','param_speed_all');
+load(fullfile(getpath('behavior',csessionID,cfishID),'leftright_eyes_to_param_angle_dist'),'left_eye_to_param_angle','right_eye_to_param_angle','left_eye_to_param_angle_visible', 'right_eye_to_param_angle_visible');
 load(fullfile(getpath('neural activity',csessionID,cfishID),'spikes_new'),'spikes_OASIS');
+load(fullfile(getpath('neural activity',csessionID,cfishID),'Coherence3_correct'),'center');
 spikes_OASIS(:,1651:1779) = [];
 Spike_X_EstTrace = smoothdata(spikes_OASIS,2,"gaussian",5);
 %0108 good bout idx was already aligned to fluo data because its high and
 %low fluo is very different from each other
-param_head_angle_all = param_head_angle_all(align_with_fluo_low==1);
-param_head_angle_fluo = param_head_angle_all(1:5:length(param_head_angle_all));
+angledata = angledata(align_with_fluo_low==1,:);
+angledata_fluo = angledata(1:5:length(angledata),:);
+[param_head_angle_all,param_head_dist_all,param_speed_all,no_param] = samfnmultvar(@(x) x(align_with_fluo_low==1),param_head_angle_all,param_head_dist_all,param_speed_all,no_param);
+[left_eye_to_param_angle,right_eye_to_param_angle,left_eye_to_param_angle_visible,right_eye_to_param_angle_visible] = ...
+    samfnmultvar(@(x) x(align_with_fluo_low==1),left_eye_to_param_angle,right_eye_to_param_angle,left_eye_to_param_angle_visible,right_eye_to_param_angle_visible);
+[param_head_angle_fluo,param_head_dist_fluo,param_speed_fluo,no_param_fluo] = samfnmultvar(@(x) x(1:5:length(param_head_angle_all)),param_head_angle_all,param_head_dist_all,param_speed_all,no_param);
+[lefteye_angle_fluo,righteye_angle_fluo,lefteye_angle_vis_fluo,righteye_angle_vis_fluo] = samfnmultvar(@(x) x(1:5:length(param_head_angle_all)),...
+    left_eye_to_param_angle,right_eye_to_param_angle,left_eye_to_param_angle_visible,right_eye_to_param_angle_visible);
 param_head_angle_hunting = mean(reshape(param_head_angle_all(reshape((good_bout_idx(:,1)-[1:20])',[],1)),20,[]),1);
 mask = 1:5:nnz(align_with_fluo_low);
 [~,hunting_idx_start] = min(abs(row2col(good_bout_idx(:,1),1) - col2row(mask)),[],2);
@@ -384,14 +392,17 @@ param_speedy_right = param_speedy(angley<0);
 param_speedz_right = param_speedz(anglez<0);
 param_speed3_right = cat(1,param_speedx_right,param_speedy_right,param_speedz_right);
 [p,tb2] = anovan(spk3_right,{behavior_states,d3_right,leftangle3_right,rightangle3_right,param_speed3_right},...
-    'continuous',[2 3 4],'model','interaction','varnames',...
+    'continuous',[2 3 4 5],'model','interaction','varnames',...
     {'behavior states','distance','leftEyeAngle','rightEyeAngle','speed'});
 %%
+
+%%
 %the movement speed and angle relative to the right eye
-param_righteye_pos = param_righteye_dist.*[cos(right_eye_to_param_angle) sin(right_eye_to_param_angle)];
+% param_righteye_pos = param_righteye_dist.*[cos(right_eye_to_param_angle) sin(right_eye_to_param_angle)];
+param_righteye_pos = [param_pos_all(:,2) param_pos_all(:,1)];
 param_righteye_vel = diff(param_righteye_pos,1,1);
 param_righteye_speed = [0;sqrt(param_righteye_vel(:,1).^2 + param_righteye_vel(:,2).^2)];
-param_righteye_move_angle = [0;atan(param_righteye_vel(:,2)./param_righteye_vel(:,1))];
+param_righteye_move_angle = [0;rad2deg(atan(param_righteye_vel(:,2)./param_righteye_vel(:,1)))];
 param_righteye_speed = param_righteye_speed(align_with_fluo_low==1);
 param_righteye_move_angle = param_righteye_move_angle(align_with_fluo_low==1);
 param_righteye_speed_fluo = param_righteye_speed(mask);
@@ -404,9 +415,24 @@ param_re_moveAnglex_right = param_righteye_move_angle_fluo(hunting_idx_wholecour
 param_re_moveAngley_right = param_righteye_move_angle_fluo(simul_bout_idx_wholecourse(angley<0));
 param_re_moveAnglez_right = param_righteye_move_angle_fluo(rest_idx_wholecourse(anglez<0));
 param_re_moveAngle3_right = cat(1,param_re_moveAnglex_right,param_re_moveAngley_right,param_re_moveAnglez_right);
-[p,tb1] = anovan(spk3_right,{behavior_states,d3rightangle3_right})
+[p,tb1] = anovan(spk3_right,{param_re_moveAngle3_right,param_re_speed3_right},'continuous',[1 2],'model','interaction','varname',{'velocity angle','param_speed'});
 %%
-%decode left/right using time points at different behavior states
+%decode left/right,distance,righteyeangle using time points at different behavior states
+% spk3 = {spkx;spky;spkz};
+spk3 = {spkx_right;spky_right;spkz_right};
+d3 = {dx_right;dy_right;dz_right};
+righteyeAngle3 = {rightanglex_right;rightangley_right;rightanglez_right};
+% angle3 = {anglex;angley;anglez};
+angle3 = {anglex(anglex<0);angley(angley<0);anglez(anglez<0)};
+eval_d3 = zeros(3,1);eval_righteyeAngle = zeros(3,1);eval_angle = zeros(3,1);
+for i=1:3
+   [f,gof] = fit(spk3{i},d3{i},'poly1');
+   eval_d3(i) = gof.rsquare;
+   [f,gof] = fit(spk3{i},cos(deg2rad(righteyeAngle3{i})),'poly1');
+   eval_righteyeAngle(i) = gof.rsquare;
+   [f,gof] = fit(spk3{i},cos(deg2rad(angle3{i})),'poly1');
+   eval_angle(i) = gof.rsquare;
+end
 %%
 % plot the evolution trajectory along time
 
@@ -515,5 +541,234 @@ ylabel('explained variance');
 bout_idx_aligned_wholecourse = [2 3 4 6 7 10];
 arrayfun(@(i) generate_MIP(W(:,i),csessionID,cfishID,['_visual_' num2str(i) 'thPC']),bout_idx_aligned_wholecourse);
 
-% Next we may try to regress the prey location and tail curvature using extracted PC 
+%%
+%extract the pc of hunting behavior, and project neural activity during
+%other behavior states and see which dimension could explains spontaneous
+%activity most while not explaining hunting activity, such that it may best
+%describe the subspace of hunting behavior
+[U,S,V] = svd(mean(spike_focus(:,1:9),3)','econ');
+spike_spon = Spike_X_EstTrace(:,setdiff(1:size(Spike_X_EstTrace,2),hunting_idx_visuo));
+proj_spon = spike_spon'*V;
+proj_focus = spike_focus(:,:)'*V;%time x component
+figure,
+plot(std(proj_spon,[],1));hold on;
+plot(std(proj_focus,[],1));
+plot(diag(S));axis tight;
+legend({'std(proj spon)','std(proj focus)','svd sigma'});
+%%
+%compare the similarity between the hunting and spontaneous subspace
 
+%%
+%angle encoding
+visuo_idx = find(removeStrangeVisuoData(no_param_fluo,param_head_dist_fluo,param_speed_fluo));
+%sptial tuning in different state
+hunting_idx_visuo = ismember(hunting_idx_wholecourse,visuo_idx);
+hunting_idx_visuo = hunting_idx_wholecourse(hunting_idx_visuo);
+nonhunting_idx = setdiff(1:length(visuo_idx),hunting_idx_wholecourse);
+nonhunting_idx_visuo = ismember(nonhunting_idx,visuo_idx);
+nonhunting_idx_visuo = nonhunting_idx(nonhunting_idx_visuo);
+simul_idx_visuo = ismember(simul_bout_idx_wholecourse,visuo_idx);
+simul_idx_visuo = simul_bout_idx_wholecourse(simul_idx_visuo);
+rest_idx_visuo = ismember(rest_idx_wholecourse,visuo_idx);
+rest_idx_visuo = rest_idx_wholecourse(rest_idx_visuo);
+idx = hunting_idx_visuo;
+% idx = nonhunting_idx_visuo;
+% idx = simul_idx_visuo;
+% idx = rest_idx_visuo;
+param_head_angle_visuo = param_head_angle_fluo(idx);
+spikes_visuo = Spike_X_EstTrace(:,idx);
+tuned2angle(param_head_angle_visuo,spikes_visuo,center,'single');
+%%
+%investigate 20 degree regional activity during hunting
+focus_idx = hunting_idx_visuo(degree20_visuoidx);
+spike_focus = zeros(length(region_20degree),15,length(focus_idx));
+for i=1:length(focus_idx)
+    spike_focus(:,:,i) = Spike_X_EstTrace(region_20degree,focus_idx(i)+[-5:9]);
+end
+idx = 4;
+figure('Position',[2044 169 1278 420]),ax(1) = subplot(1,3,1,polaraxes),ax(2) = subplot(1,3,2),ax(3) = subplot(1,3,3),
+cmap = [min(spike_focus(:,:,idx),[],'all') max(spike_focus(:,:,idx),[],'all')];
+for i=1:15
+%     ax = plot_brain_contour(center);
+%     set(gca,ax(1));
+    sgtitle(num2str(i)),
+    subplot(1,3,1),cla,
+    polarplot(deg2rad(param_head_angle_fluo(focus_idx(idx)+[-5:5])),ones(11,1),'-k*');
+    polarplot(angledata_fluo(focus_idx(idx)+i-6,:)+pi/2,linspace(0,1,21));
+    hold on;
+    polarscatter(deg2rad(param_head_angle_fluo(focus_idx(idx)+i-6)),1,20,'r','o','filled');
+    polarscatter([deg2rad(lefteye_angle_fluo(focus_idx(idx)+i-6)) deg2rad(righteye_angle_fluo(focus_idx(idx)+i-6))],[.5 .5],20,rgb({'green','blue'}),'o','filled');
+    polarscatter([deg2rad(left_eye_angle_fluo(focus_idx(idx)+i-6)) deg2rad(right_eye_angle_fluo(focus_idx(idx)+i-6))],[.25 .25],20,rgb({'green','blue'}),'o','filled');
+    title(num2str(conv_or_not_fluo(focus_idx(idx)+i-6)));
+    
+    subplot(1,3,2),
+    scatter(center(region_20degree,1),center(region_20degree,2),20,spike_focus(:,i,idx),'filled');
+    caxis(cmap);grid on;
+
+    subplot(1,3,3),
+    scatter(center(region_20degree,2),center(region_20degree,3),20,spike_focus(:,i,idx),'filled');
+    caxis(cmap);grid on;
+%     multiview;
+    pause(.5);
+end
+%%
+%investigate 20 degree regional activity during hunting
+disp('running this section....');
+duration = 15;
+focus_idx = hunting_idx_visuo(60);
+% focus_idx = simul_idx_visuo(267);
+% focus_idx = rest_idx_visuo(140)
+spike_focus = zeros(length(region_20degree),duration,length(focus_idx));
+for i=1:length(focus_idx)
+    spike_focus(:,:,i) = Spike_X_EstTrace(region_20degree,focus_idx(i)+[-5:duration-6]);
+end
+idx = 1;
+writer = VideoWriter(fullfile(getpath('result'),csessionID,['functional_mapping_frame_' num2str(focus_idx(idx))]));
+open(writer);
+fig = figure('Position',[2044 169 606 673]);
+cmap = [min(spike_focus(:,:,idx),[],'all') max(spike_focus(:,:,idx),[],'all')];
+for i=1:duration
+%     ax = plot_brain_contour(center);
+%     set(gca,ax(1));
+    clf;
+    sgtitle(['frame: ' num2str(i)]),
+    ax2 = axes('Position',[[0.2000 0.3000 0.6000 0.5000]]);
+    scatter(center(region_20degree,1),center(region_20degree,2),20,spike_focus(:,i,idx),'filled');
+    caxis(cmap);grid on;axis tight;
+    ax1 = polaraxes('Position',[0.1 0.1 0.8 0.7],'Color','none');
+    %prey relative to head
+    polarplot(pi/2-deg2rad(param_head_angle_fluo(focus_idx(idx)+[-5:5])),4*ones(11,1),'-k*');
+    hold on;
+    polarscatter(pi/2-deg2rad(param_head_angle_fluo(focus_idx(idx)+i-6)),4,20,'r','o','filled');
+    %tail
+    polarplot(pi+angledata_fluo(focus_idx(idx)+i-6,:),1+linspace(0,1,21),'LineWidth',2);
+    %two eyes
+    polarscatter(pi/2-[deg2rad(lefteye_angle_fluo(focus_idx(idx)+i-6)) deg2rad(righteye_angle_fluo(focus_idx(idx)+i-6))],[3 3],20,rgb({'green','blue'}),'o','filled');
+    polarscatter(pi/2-[deg2rad(left_eye_angle_fluo(focus_idx(idx)+i-6)) deg2rad(right_eye_angle_fluo(focus_idx(idx)+i-6))],[2.5 2.5],20,rgb({'green','blue'}),'o','filled');
+    title(['conv or not:' num2str(conv_or_not_fluo(focus_idx(idx)+i-6))]);
+    set(gca,'Color','none');
+%     subplot(1,3,3),
+%     scatter(center(region_20degree,2),center(region_20degree,3),20,spike_focus(:,i,idx),'filled');
+%     caxis(cmap);grid on;
+%     multiview;
+%     pause(.5);
+%     pause;
+    frame = getframe(fig);
+    writeVideo(writer,frame);
+end
+close(writer);
+disp('run done！');
+%%
+%average across hunting
+disp('running this section....');
+duration = 15;
+focus_idx = hunting_idx_visuo(ismember(hunting_idx_visuo,hunting_idx_start));
+left_param_mask = arrayfun(@(i) mean(param_head_angle_fluo(focus_idx(i)+[-5:1])),1:length(focus_idx))>0;
+focus_idx = focus_idx(~left_param_mask);
+spike_focus = zeros(length(region_20degree),duration,length(focus_idx));
+for i=1:length(focus_idx)
+    spike_focus(:,:,i) = Spike_X_EstTrace(region_20degree,focus_idx(i)+[-5:duration-6]);
+end
+spike_focus = Spike_X_EstTrace(region_20degree,750:784);
+spike_focus = mean(spike_focus,3);
+idx = 1;
+writer = VideoWriter(fullfile(getpath('result'),csessionID,['functional_mapping_frame_' num2str(focus_idx(idx))]));
+open(writer);
+fig = figure('Position',[2044 169 606 673]);
+cmap = [min(spike_focus(:,:,idx),[],'all') max(spike_focus(:,:,idx),[],'all')];
+for i=1:duration
+%     ax = plot_brain_contour(center);
+%     set(gca,ax(1));
+    clf;
+    sgtitle(['frame: ' num2str(i)]),
+    ax2 = axes('Position',[[0.2000 0.3000 0.6000 0.5000]]);
+    scatter(center(region_20degree,1),center(region_20degree,2),20,spike_focus(:,i,idx),'filled');
+    caxis(cmap);grid on;axis tight;
+    ax1 = polaraxes('Position',[0.1 0.1 0.8 0.7],'Color','none');
+    %prey relative to head
+    polarplot(pi/2-deg2rad(param_head_angle_fluo(focus_idx(idx)+[-5:5])),4*ones(11,1),'-k*');
+    hold on;
+    polarscatter(pi/2-deg2rad(param_head_angle_fluo(focus_idx(idx)+i-6)),4,20,'r','o','filled');
+    %tail
+    polarplot(pi+angledata_fluo(focus_idx(idx)+i-6,:),1+linspace(0,1,21),'LineWidth',2);
+    %two eyes
+    polarscatter(pi/2-[deg2rad(lefteye_angle_fluo(focus_idx(idx)+i-6)) deg2rad(righteye_angle_fluo(focus_idx(idx)+i-6))],[3 3],20,rgb({'green','blue'}),'o','filled');
+    polarscatter(pi/2-[deg2rad(left_eye_angle_fluo(focus_idx(idx)+i-6)) deg2rad(right_eye_angle_fluo(focus_idx(idx)+i-6))],[2.5 2.5],20,rgb({'green','blue'}),'o','filled');
+    title(['conv or not:' num2str(conv_or_not_fluo(focus_idx(idx)+i-6))]);
+    set(gca,'Color','none');
+%     subplot(1,3,3),
+%     scatter(center(region_20degree,2),center(region_20degree,3),20,spike_focus(:,i,idx),'filled');
+%     caxis(cmap);grid on;
+%     multiview;
+%     pause(.5);
+%     pause;
+    frame = getframe(fig);
+    writeVideo(writer,frame);
+end
+close(writer);
+disp('run done！');
+%%
+idx = idx & ~(lefteye_angle_vis_fluo==0) & ~(righteye_angle_vis_fluo==0);
+lefteye_angle_fluo = lefteye_angle_fluo(idx);
+spikes_visuo = Spike_X_EstTrace(:,idx);
+tuned2angle(lefteye_angle_fluo,spikes_visuo,center,'single');
+%%
+duration = 15;
+focus_idx = hunting_idx_visuo(ismember(hunting_idx_visuo,hunting_idx_start));
+left_param_mask = arrayfun(@(i) mean(param_head_angle_fluo(focus_idx(i)+[-5:1])),1:length(focus_idx))>0;
+focus_idx = focus_idx(~left_param_mask);
+spike_focus = zeros(length(region_20degree),duration,length(focus_idx));
+for i=1:length(focus_idx)
+    spike_focus(:,:,i) = Spike_X_EstTrace(region_20degree,focus_idx(i)+[-5:duration-6]);
+end%ignore the actual difference of visual stimulus, like different angle, distance, direction, speed, etc.
+%clustering the areas with very similar response 
+%cross-correlation between regions to find out the info flow route
+del_region = sum(all(spike_focus==0,2),3)>0.1*length(focus_idx);
+keep_region = find(~del_region);
+spike_focus(del_region,:,:) = [];
+spike_focus = reshape(spike_focus,size(spike_focus,1),[]);
+
+orig_r = xcorr(spike_focus',3,'coeff');%(2 x duration + 1)xregion^2, earlier and later
+[r,lag] = max(orig_r,[],1);%if lag<6, x is earlier than y; else, later
+%use the r to find out the cluster
+r = reshape(r,sqrt(length(r)),sqrt(length(r)));
+r = tril(r) + tril(r,-1)';
+r(index_diag(r)) = 1;
+% idx = spectralcluster(r,20,'Distance','precomputed');
+Z = linkage(squareform(1-r),'ward');
+idx = cluster(Z,'maxclust',2);
+thld = median([Z(end-5,3) Z(end-4,3)]);
+dendrogram(Z,'ColorThreshold',thld);
+cophenet(Z,squareform(1-r));
+% color = brewermap(length(unique(idx)),'Set3');
+N = histcounts(idx,[1:length(unique(idx))+1]-0.5);
+color = colormap(parula(length(unique(idx))));
+[N,I] = sort(N,'ascend');
+color = color(I,:);
+figure,hold on,
+for i=unique(idx)'
+    scatter3(center(keep_region(idx==i),1),center(keep_region(idx==i),2),center(keep_region(idx==i),3),10,color(i,:),'filled');
+end
+%%
+%how the variability of neural activity around movement onset change with
+%time
+figure,
+plot(mean(var(spike_focus,[],3)));ylabel('variance')
+yyaxis right;
+plot(mean(mean(spike_focus,3),1));ylabel('average firing rate');
+figure,plot(mean(var(spike_focus,[],3))./mean(mean(spike_focus,3),1));
+hold on;
+plot(mean(var(spike_focus,[],3))./mean(mean(spike_focus,3),1));
+focus_idx = randperm(size(Spike_X_EstTrace,2)-duration,length(focus_idx));
+spike_focus = zeros(length(region_20degree),duration,length(focus_idx));
+for i=1:length(focus_idx)
+    spike_focus(:,:,i) = Spike_X_EstTrace(region_20degree,focus_idx(i)+[-5:duration-6]);
+end%ignore the actual difference of visual stimulus, like different angle, distance, direction, speed, etc.
+%%
+spike_focus = mean(spike_focus,3);
+thld = quantile(spike_focus(:),.6);
+detect_region = median(spike_focus(:,4:13),2)>thld;
+[activation,act_time] = max(spike_focus(detect_region,4:13),[],2);
+plot_brain_contour(center,'3d');
+scatter3(center(keep_region(detect_region),1),center(keep_region(detect_region),2),center(keep_region(detect_region),3),10,act_time,'filled');
+colormap('jet');
