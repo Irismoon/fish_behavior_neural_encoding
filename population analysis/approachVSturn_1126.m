@@ -1,0 +1,2 @@
+%%
+load(fullfile(getpath(''))

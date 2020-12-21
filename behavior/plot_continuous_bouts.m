@@ -1,6 +1,6 @@
 function plot_continuous_bouts(bouts,ax)
 %function plot_continuous_bouts(ax,bouts)
-%bouts: t x tail x 2 segment
+%bouts: t x tail x 2(x,y) or t x tail (elements may represent angle/curvature)
 if nargin<2
     ax = gca;
 end

@@ -1,5 +1,5 @@
 function [outputArg1,outputArg2] = generate_original_low_video(sessionID,fishID)
-prepath = fullfile(getpath('server_orig',sessionID,fishID),'fish_track_*');
+prepath = fullfile(getpath('server_orig_neural',sessionID,fishID),'fish_track_*');
 fileinfo = dir(prepath);
 t = arrayfun(@(i) regexp(fileinfo(i).name,'\s\d{2}\s\d{2}\s\d{2}','match'),1:length(fileinfo),'un',0);
 t = cellfun(@(x) str2double(strrep(x,' ','')),t);

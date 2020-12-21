@@ -3,6 +3,7 @@ imagefile_path = getpath('result');
 if ~exist('postfix','var')
     postfix = '';
 end
+X = row2col(X,min(size(X)));
 %%
 %load DFoF and A3
 if strcmp(sessionID,'200705')

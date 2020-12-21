@@ -1,6 +1,6 @@
 function visuo2motor(sessionID,fishID)
 %%
-load(fullfile(getpath('behavior',sessionID,fishID),'tail_swing'),'sum_curv','bout_idx');
+load(fullfile(getpath('behavior',sessionID,fishID),'tail_swing'),'sum_curv','bout_idx','new_centerline_20');
 load(fullfile(getpath('behavior',sessionID,fishID),'high_analysis'),'conv_or_not');
 load(fullfile(getpath('behavior',sessionID,fishID),'low_video_analysis_result'),'param_head_angle_all','no_param','param_head_dist_all','param_pos_all');
 % load(fullfile(getpath('behavior',sessionID,fishID),'leftright_eyes_to_param_angle'));
@@ -11,15 +11,29 @@ elseif (length(conv_or_not)-length(sum_curv))<5 && (length(conv_or_not)-length(s
 else
     load(fullfile(getpath('behavior',sessionID,fishID),'align_with_fluo'));
     conv_or_not = conv_or_not(align_with_fluo_high==1);
-    [sum_curv,param_head_angle_all,param_head_dist_all,param_pos_all] = samfnmultvar(@(x) x(align_with_fluo_low==1,:,:),sum_curv,param_head_angle_all,param_head_dist_all,param_pos_all);
+    [sum_curv,new_centerline_20,param_head_angle_all,param_head_dist_all,param_pos_all] = samfnmultvar(@(x) x(align_with_fluo_low==1,:,:),sum_curv,new_centerline_20,param_head_angle_all,param_head_dist_all,param_pos_all);
 end
+%%
+%only choose bouts with param in visual field
+del_idx = [];
+for i=1:size(bout_idx,1)
+    if all(no_param(bout_idx(i,1)+[-5:1])==0)
+        del_idx = [del_idx;i];
+    end
+    if all(conv_or_not(bout_idx(i,1)+[-2:2])==0)
+        del_idx = [del_idx;i];
+    end
+end
+bout_idx(del_idx,:) = [];
+conv_bout_idx = bout_idx;
+save(fullfile(getpath('behavior',sessionID,fishID),'tail_swing'),'conv_bout_idx','-append');
 %%
 %check if when param is at different location, the induced behavior is
 %different
-startFrame = bout_idx(:,1);
+startFrame = bout_idx(:,1);endFrame = bout_idx(:,2);
 for iframe=1:length(startFrame)
     if startFrame(iframe)>20
-        [param_head_angle_move(iframe),param_head_dist_move(iframe)] = samfnmultvar(@(x) mean(x(startFrame(iframe)-20:startFrame(iframe)-1)),...
+        [param_head_angle_move(iframe),param_head_dist_move(iframe)] = samfnmultvar(@(x) mean(x(startFrame(iframe)-5:endFrame(iframe))),...
             param_head_angle_all,param_head_dist_all);
     else
         disp('first frame detected!');
@@ -30,32 +44,40 @@ end
 [sum_curv_move,Imaxabs] = arrayfun(@(i) maxabs(sum_curv(startFrame(i):startFrame(i)+5)),1:length(startFrame));
 conv_or_not_move = arrayfun(@(i) mean(conv_or_not(startFrame(i):startFrame(i)+5)),1:length(startFrame))>0;
 %%
+[nrow,ncol] = arrange_subplots(size(bout_idx,1));
+figure,
+for i=1:size(bout_idx,1)
+    subplot(nrow,ncol,i),
+    plot_continuous_bouts(new_centerline_20(bout_idx(i,1):bout_idx(i,2),:,:));
+    title([num2str(bout_idx(i,1)) ' ' num2str(param_head_angle_move(i))]);
+end
+%%
 % mask = ~isoutlier(param_head_dist_move);
 % [startFrame,param_head_angle_move,param_head_dist_move,sum_curv_move,Imaxabs] = samfnmultvar(@(x) x(mask),startFrame,param_head_angle_move,param_head_dist_move,sum_curv_move,Imaxabs);
 %%
 %compare bouts with to without eye convergence
 figure,
-[sum_curv_move_plt,param_head_angle_move_plt] = samfnmultvar(@(x) x(conv_or_not_move==true),sum_curv_move,param_head_angle_move);
-subplot(1,2,1)
-try
-p = ranksum(sum_curv_move(param_head_angle_move_plt>0),sum_curv_move(param_head_angle_move_plt<=0));
-catch ME
-    return;
-end
-boxplot(sum_curv_move_plt,param_head_angle_move_plt>0);
-sigstar([1 2],p);
-title(['converged ' num2str(nnz((sum_curv_move_plt.*param_head_angle_move_plt)>0)/length(sum_curv_move_plt))]);
-[sum_curv_move_plt,param_head_angle_move_plt] = samfnmultvar(@(x) x(conv_or_not_move==false),sum_curv_move,param_head_angle_move);
-subplot(1,2,2)
-try
-p = ranksum(sum_curv_move(param_head_angle_move_plt>0),sum_curv_move(param_head_angle_move_plt<=0));
-catch ME
-    return;
-end
-boxplot(sum_curv_move_plt,param_head_angle_move_plt>0);
-sigstar([1 2],p);
-title(['unconverged ' num2str(nnz((sum_curv_move_plt.*param_head_angle_move_plt)>0)/length(sum_curv_move_plt))]);
-sgtitle([sessionID ' fish ' fishID]);
+% [sum_curv_move_plt,param_head_angle_move_plt] = samfnmultvar(@(x) x(conv_or_not_move==true),sum_curv_move,param_head_angle_move);
+% subplot(1,2,1)
+% try
+% p = ranksum(sum_curv_move(param_head_angle_move_plt>0),sum_curv_move(param_head_angle_move_plt<=0));
+% catch ME
+%     return;
+% end
+% boxplot(sum_curv_move_plt,param_head_angle_move_plt>0);
+% sigstar([1 2],p);
+% title(['converged ' num2str(nnz((sum_curv_move_plt.*param_head_angle_move_plt)>0)/length(sum_curv_move_plt))]);
+% [sum_curv_move_plt,param_head_angle_move_plt] = samfnmultvar(@(x) x(conv_or_not_move==false),sum_curv_move,param_head_angle_move);
+% subplot(1,2,2)
+% try
+% p = ranksum(sum_curv_move(param_head_angle_move_plt>0),sum_curv_move(param_head_angle_move_plt<=0));
+% catch ME
+%     return;
+% end
+% boxplot(sum_curv_move_plt,param_head_angle_move_plt>0);
+% sigstar([1 2],p);
+% title(['unconverged ' num2str(nnz((sum_curv_move_plt.*param_head_angle_move_plt)>0)/length(sum_curv_move_plt))]);
+% sgtitle([sessionID ' fish ' fishID]);
 %%
 % label_prey_angle = param_head_angle_move>0;
 % label_tail_direction = (sum_curv_move>0)*2;
@@ -102,16 +124,16 @@ sgtitle([sessionID ' fish ' fishID]);
 
 %%
 % figure('Position',[1927 430 1765 420]),
-% subplot(1,2,1)
-% param_head_angle_move_normal = angle_midline2normal(param_head_angle_move);
-% polarscatter(param_head_angle_move_normal,(param_head_dist_move),10,sum_curv_move,'filled');
-% hold on;
-% [~,idx] = max(abs(sum_curv_move));
-% polarscatter(param_head_angle_move_normal(idx),(param_head_dist_move(idx)),30,sum_curv_move(idx),'filled','MarkerEdgeColor','k');
-% colormap('jet');cbar=colorbar;title(cbar,'sum_curv','Interpreter','none');
-% cbar.Ticks = [-1,1],cbar.TickLabels={'right swing','left swing'};
-% caxis([-max(abs(sum_curv_move)) max(abs(sum_curv_move))]);
-% title('param to fish position just before move (radius log2 scale)');
+subplot(1,2,1)
+param_head_angle_move_normal = angle_midline2normal(param_head_angle_move);
+polarscatter(param_head_angle_move_normal,(param_head_dist_move),10,sum_curv_move,'filled');
+hold on;
+[~,idx] = max(abs(sum_curv_move));
+polarscatter(param_head_angle_move_normal(idx),(param_head_dist_move(idx)),30,sum_curv_move(idx),'filled','MarkerEdgeColor','k');
+colormap('jet');cbar=colorbar;title(cbar,'sum_curv','Interpreter','none');
+cbar.Ticks = [-1,1],cbar.TickLabels={'right swing','left swing'};
+caxis([-max(abs(sum_curv_move)) max(abs(sum_curv_move))]);
+title('param to fish position just before move (radius log2 scale)');
 %%
 % subplot(1,3,2)
 % reader = VideoReader(fullfile(getpath('behavior',sessionID,fishID),'low_unalign.avi'));
@@ -119,23 +141,23 @@ sgtitle([sessionID ' fish ' fishID]);
 % imshow(frame);
 % title('video frame at the largest point in left scatter');
 %%
-% subplot(1,2,2)
-% boxplot(sum_curv_move,param_head_angle_move>0+1,'notch','on');
-% p = ranksum(sum_curv_move(param_head_angle_move>0),sum_curv_move(param_head_angle_move<0));
-% hold on;
-% sigstar([1 2],p);
-% line(get(gca,'XLim'),[0 0],'LineStyle','--','Color','k');
-% ax = gca;
-% ax.XTickLabel = {'at right','at left'};
-% ax.YTick = [-1,1];
-% ax.YTickLabel = {'right swing','left swing'};ax.YTickLabelRotation=90;
-% ylabel('tail swing direction');xlabel('prey location');
-% title('left swing:>0, right swing:<0');
-% % param_head_angle_whole = angle_midline2normal(param_head_angle_all);
-% % polarscatter(param_head_angle_whole,log2(param_head_dist_all),10,sum_curv,'filled');
-% % colormap('cool');cbar=colorbar;title(cbar,'sum_curv','Interpreter','none');
-% % title('param to fish position over all time (radius log2 scale)');
-% sgtitle(sessionID);
+subplot(1,2,2)
+boxplot(sum_curv_move,param_head_angle_move>0+1,'notch','on');
+p = ranksum(sum_curv_move(param_head_angle_move>0),sum_curv_move(param_head_angle_move<0));
+hold on;
+sigstar([1 2],p);
+line(get(gca,'XLim'),[0 0],'LineStyle','--','Color','k');
+ax = gca;
+ax.XTickLabel = {'at right','at left'};
+ax.YTick = [-1,1];
+ax.YTickLabel = {'right swing','left swing'};ax.YTickLabelRotation=90;
+ylabel('tail swing direction');xlabel('prey location');
+title('left swing:>0, right swing:<0');
+% param_head_angle_whole = angle_midline2normal(param_head_angle_all);
+% polarscatter(param_head_angle_whole,log2(param_head_dist_all),10,sum_curv,'filled');
+% colormap('cool');cbar=colorbar;title(cbar,'sum_curv','Interpreter','none');
+% title('param to fish position over all time (radius log2 scale)');
+sgtitle(sessionID);
 % savefig(gcf,fullfile(getpath('behavior',sessionID,fishID),'tail_swing_direction_versus_prey_location'));
 end
 function [y,I] = maxabs(x)

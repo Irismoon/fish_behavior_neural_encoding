@@ -29,7 +29,7 @@ elseif ismember(datatype,{'code','Code'})
     returnpath = fullfile(prepath,'Mango_Wang','Code');
 elseif ismember(datatype,{'result','results'})
     returnpath = fullfile(prepath,'Mango_Wang','Result');
-elseif ismember(datatype,{'server_original','server_orig'})
+elseif ismember(datatype,{'server_original_neural','server_orig_neural'})
     folderpath = fullfile(serverpath,'Fish-Brain-Behavior-Analysis',[sessionID '_fish' num2str(fishID) '*']);
     folderinfo = dir(folderpath);
     assert(length(folderinfo)==1,'please specify the fish number');
