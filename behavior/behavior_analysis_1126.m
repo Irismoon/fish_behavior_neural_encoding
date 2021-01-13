@@ -37,3 +37,8 @@ figure,
 histogram(conv_bout_idx(:,2)-conv_bout_idx(:,1)+1);
 xlabel('bout duration');ylabel('number');
 %%
+%how the eye angle changes during convergence
+conv_idx = reshape(find(diff(conv_or_not)),2,[]);
+conv_angle = arrayfun(@(i) converge_angle(conv_idx(1,i):conv_idx(2,i)),1:size(conv_idx,2),'un',0);
+figure,hold on,
+cellfun(@(x) plot(x),conv_angle);

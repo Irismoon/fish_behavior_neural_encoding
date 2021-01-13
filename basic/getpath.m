@@ -1,4 +1,5 @@
 function returnpath = getpath(datatype,sessionID,fishID)
+%function returnpath = getpath(datatype,sessionID,fishID)
 %datatype could be {neural activity,activity}. or {'behavior'}
 %sessionID could be '200705'
 %fishID could be '1'/'2'/''

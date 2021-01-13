@@ -1,4 +1,4 @@
-sessionID = '201126';fishID = '1';
+sessionID = '201105';fishID = '2';
 %first, move centerline data to local disk
 % moveDataFromServer(sessionID,fishID);
 %2,get angledata from centerline 
