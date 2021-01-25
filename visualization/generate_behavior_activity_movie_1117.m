@@ -5,7 +5,7 @@
 %% input: sequences, length_sequences, bad_sequences, FiringRate, A3,
 %% path_high, path_low, path_MIP_ori, path_MIP_aligned, path_out,
 %% output: a video saved at path_out
-function generate_behavior_activity_movie(sessionID,fishID,behavior_var)
+function generate_behavior_activity_movie_1117(sessionID,fishID,behavior_var)
 % function generate_behavior_activity_movie(sessionID,fishID,behavior_var)
 %behavior_var could be a char vector or a cell array containing char arrays
 %it could be any behavior variable you are interested in 
@@ -24,31 +24,32 @@ fileinfo = dir(fullfile(parentpath,'*low_align_with_fluo.avi'));
 fileName_low = fullfile(fileinfo.folder,fileinfo.name);
 obj_low = VideoReader(fileName_low);
 %load high video
-nframe = 0;
-vidFrame_high = [];
-while hasFrame(obj_high)
-    nframe = nframe+1;
-    vidtmp = readFrame(obj_high);
-    if mod(nframe,5)==1
-        vidFrame_high = cat(4,vidFrame_high,vidtmp);
-    end
-end
+% nframe = 0;
+% vidFrame_high = [];
+% while hasFrame(obj_high)
+%     nframe = nframe+1;
+%     vidtmp = readFrame(obj_high);
+%     if mod(nframe,5)==1
+%         vidFrame_high = cat(4,vidFrame_high,vidtmp);
+%     end
+% end
 %load low video
-nframe = 0;
-vidFrame_low = [];
-while hasFrame(obj_low)
-    nframe = nframe+1;
-    vidtmp = readFrame(obj_low);
-    if mod(nframe,5)==1
-        vidFrame_low = cat(4,vidFrame_low,vidtmp);
-    end
-end
+% nframe = 0;
+% vidFrame_low = [];
+% while hasFrame(obj_low)
+%     nframe = nframe+1;
+%     vidtmp = readFrame(obj_low);
+%     if mod(nframe,5)==1
+%         vidFrame_low = cat(4,vidFrame_low,vidtmp);
+%     end
+% end
 %load MIP
 %0705
-fileName_MIP_DFoF = fullfile(getpath('imaging',sessionID,fishID),'MIP_DFoF_Stack_contrastAdjusted.tif');
-fileName_MIP_affine = fullfile(getpath('imaging',sessionID,fishID),'MIP_affine_stack.tif');
+% fileName_MIP_DFoF = fullfile(getpath('imaging',sessionID,fishID),'MIP_DFoF_Stack_contrastAdjusted.tif');
+% fileName_MIP_affine = fullfile(getpath('imaging',sessionID,fishID),'MIP_affine_stack.tif');
 %1117
-
+ fileName_MIP_affine = fullfile(getpath('neural activity',sessionID,fishID),'MIP_affine_stack.tif');
+ fileName_MIP_DFoF = fullfile(getpath('neural activity',sessionID,fishID),'MIP_DFoF_stack.tif');
 %%
 %load behavior data you want to plot
 idx_keep_frame_high = find(align_with_fluo_high);
@@ -65,7 +66,7 @@ for i = 1:length(behavior_var)
 end
 xlabel('frame(0.1s)');
 legends = behavior_var;
-set(gcf,'position',[0,0,2440,600]);axis tight;
+set(gcf,'position',[0,0,1500,600]);axis tight;
 %%
 path_out = getpath('behavior',sessionID,fishID);
 fileName_out = fullfile(path_out,['behavior_activity_movie_' strjoin(behavior_var,'&') '.avi']);
@@ -73,20 +74,19 @@ obj_out = VideoWriter(fileName_out);
 open(obj_out);
 %% prepare the input and output files
 %% for each frame, read the pictures, plot, and put them together, write into a vedio
-imagInfo = imfinfo(fullfile(getpath('imaging',sessionID,fishID),'MIP_DFoF_Stack_contrastAdjusted.tif'));
+imagInfo = imfinfo(fullfile(getpath('neural activity',sessionID,fishID),'MIP_affine_stack.tif'));
 numt = length(imagInfo);
 fprintf('starting writing into movie...');
 for it = 1:numt
     if mod(it,500)==0 disp(num2str(it)); end
-    frame_high = vidFrame_high(:,:,:,it);%video is five times faster than imaging
-    frame_low = vidFrame_low(:,:,:,it);
+    frame_high = read(obj_low,(it-1)*5+1);%video is five times faster than imaging
+    frame_low = read(obj_high,(it-1)*5+1);
     frame_high = flip(frame_high,1);
     frame_low = flip(frame_low,1);
-    frame_MIP_DFoF = imread(fileName_MIP_DFoF,it);
-    frame_MIP_DFoF = repmat(uint8(double(frame_MIP_DFoF)/65535*256),1,1,3);%contrast adjusted
-%     frame_MIP_DFoF = uint8(repmat(double(frame_MIP_DFoF),1,1,3)*900/65535); % 3 channels, uint16 to uint8(all data above 255 will saturate, this will increase the brightness and decrease the contrast)
     frame_MIP_affine = imread(fileName_MIP_affine,it);
     frame_MIP_affine = repmat(frame_MIP_affine,1,1,3);
+    frame_MIP_DFoF = imread(fileName_MIP_DFoF,it);
+    frame_MIP_DFoF = repmat(uint8(double(frame_MIP_DFoF)/65535*256),1,1,3);%contrast adjusted
     
     for iBeh = 1:length(behavior_var)
         h = findobj(fig,'type','line','tag',behavior_var{iBeh}); % request the color of the relevant line
@@ -99,23 +99,24 @@ for it = 1:numt
     frame_plot = frame_plot.cdata;
     
     %% put them together to form a picture
-    width_out = size(frame_low,2) + size(frame_MIP_DFoF,2) + size(frame_MIP_affine,2); % the positions of these panels are a little complex
-    if size(frame_plot,2)>width_out
-        width_out = size(frame_plot,2);
-    end
-    height_out = size(frame_MIP_DFoF,1) + size(frame_plot,1);
-    frame_out = uint8(zeros(height_out,width_out,3));
+   
     %----------------------------------------%
     %|                 (plot)              |
     %-----------------------------------------
-    %|      (low)     |          |          |
-    %|----------------| MIP_DFoF |MIP_affine|
-    %|     (high)     |          |          |
+    %|      (low)     |            |
+    %|----------------| |MIP_affine|
+    %|     (high)     |            |
     [hplot,wplot,~] = size(frame_plot);
     [hlow,wlow,~] = size(frame_low);
     [hhigh,whigh,~] = size(frame_high);
-    [hMIP_d,wMIP_d,~] = size(frame_MIP_DFoF);
     [hMIP_a,wMIP_a,~] = size(frame_MIP_affine);
+    [hMIP_d,wMIP_d,~] = size(frame_MIP_DFoF);
+     width_out = max(wlow,whigh) + size(frame_MIP_DFoF,2) + size(frame_MIP_affine,2); % the positions of these panels are a little complex
+    if size(frame_plot,2)>width_out
+        width_out = size(frame_plot,2);
+    end
+    height_out = max([size(frame_MIP_DFoF,1),hMIP_a,hlow+hhigh]) + size(frame_plot,1);
+    frame_out = uint8(zeros(height_out,width_out,3));
     frame_out(1:hplot,1:wplot,:) = frame_plot; % top: frame_plot
     frame_out(hplot+1:hplot+hlow,1:wlow,:) = frame_low; % bottom left first row: frame_low
     frame_out(hplot+hlow+1:hplot+hlow+hhigh,1:whigh,:) = frame_high; % bottom left second row: frame_high

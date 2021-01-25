@@ -1,4 +1,4 @@
-function [outputArg1,outputArg2] = generate_unalign_low_video(sessionID,fishID)
+function [outputArg1,outputArg2] = generate_unalign_low_video(sessionID,fishID,flag)
 prepath = fullfile(getpath('server_behavior',sessionID,fishID),'*.avi');
 fileinfo = dir(prepath);
 t = arrayfun(@(i) regexp(fileinfo(i).name,'dpf_\d{2}_low','match'),1:length(fileinfo),'un',0);
