@@ -18,7 +18,7 @@ elseif ismember(datatype,{'behavior'})
     folderinfo = dir(folderpath);
     if length(folderinfo)>1
         idx = input(['There is ' length(folderinfo) ' fishes, please select which fish to use']);
-    else 
+    else
         idx = 1;
     end
     returnpath = fullfile(folderinfo(idx).folder,folderinfo(idx).name);
@@ -37,6 +37,10 @@ elseif ismember(datatype,{'server_original_neural','server_orig_neural'})
     returnpath = fullfile(folderinfo.folder,folderinfo.name);
 elseif ismember(datatype,{'server_analysis_result','server_analysis','server_behavior'})
     folderpath = fullfile(serverpath,'Fish-Brain-Behavior-Analysis','analysis_result',[sessionID '_fish' num2str(fishID) '*']);
+    folderinfo = dir(folderpath);
+    returnpath = fullfile(folderinfo.folder,folderinfo.name);
+elseif ismember(datatype,{'server_orig'})
+    folderpath = fullfile(serverpath,'Fish-Brain-Behavior-Analysis',[sessionID '_fish' num2str(fishID) '*']);
     folderinfo = dir(folderpath);
     returnpath = fullfile(folderinfo.folder,folderinfo.name);
 else
