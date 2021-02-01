@@ -1,4 +1,5 @@
 function generate_MIP(X,sessionID,fishID,postfix)
+%function generate_MIP(X,sessionID,fishID,postfix)
 imagefile_path = getpath('result');
 if ~exist('postfix','var')
     postfix = '';
