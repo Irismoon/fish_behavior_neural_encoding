@@ -3,9 +3,9 @@ function fluo_idx = align_behavior2neuro(bout_idx,align_with_fluo_low)
 bout_label = arrayfun(@(i) all(align_with_fluo_low(bout_idx(i,1)):align_with_fluo_low(bout_idx(i,2))==1),1:size(bout_idx,1));
 bout_idx = bout_idx(bout_label,:);
 low_idx = find(align_with_fluo_low);
-bout_idx = arrayfun(@(i) [find(low_idx==bout_idx(i,1)) find(low_idx==bout_idx(i,2))],1:size(bout_idx,1),'un',0);
-bout_idx = cat(1,bout_idx{:});
-bout_idx(:,1:2) = bout_idx;
+new_bout_idx = arrayfun(@(i) [find(low_idx==bout_idx(i,1)) find(low_idx==bout_idx(i,2))],1:size(bout_idx,1),'un',0);
+new_bout_idx = cat(1,new_bout_idx{:});
+bout_idx(:,1:2) = new_bout_idx;
 %delete very short bout
 bout_len = bout_idx(:,2) - bout_idx(:,1) + 1;
 bout_idx(bout_len<4,:) = [];

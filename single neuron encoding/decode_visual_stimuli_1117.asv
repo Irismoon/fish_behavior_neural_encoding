@@ -293,6 +293,3 @@ param_head_angle_period = arrayfun(@(i) param_head_angle_focus(i+[1:period_len])
 param_head_angle_period = mean(cat(2,param_head_angle_period{:}),2);
 plot_neural_activity_with_param_pos(X,center,param_head_angle_period,param_head_dist_period,angle_data_period,'_201117_period_median');
 %%
-roi = 2457;
-figure,plot(squeeze(spike_raw_period(1962,:,:)));%time x trial
-%%
