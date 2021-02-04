@@ -101,22 +101,22 @@ title('receptive field of significantly related regions')
 %generalized linear mixed effects model
 pValue = zeros(numRegion,3);
 for i=1:numRegion
-tbl = table(spike_raw(i,:)',sum_curv_fluo,param_head_dist_fluo,param_head_angle_fluo,categorical(index),'VariableNames',{'spike','sum_curv','head_distance','head_angle','behavior_states'});
-formula = 'spike ~ sum_curv + head_distance + (1|behavior_states)';
-lme = fitlme(tbl,formula);
-formula = 'spike ~ sum_curv + head_distance + (1|behavior_states) + (sum_curv-1|behavior_states)';
-lme1 = fitlme(tbl,formula);
-result = compare(lme,lme1);%,'CheckNesting',true);
-pValue(i,1) = result.pValue(2);
-formula = 'spike ~ sum_curv + head_distance + (1|behavior_states) + (sum_curv-1|behavior_states) + (head_distance-1|behavior_states)';
-lme1 = fitlme(tbl,formula);
-result = compare(lme,lme1);%,'CheckNesting',true);
-pValue(i,2) = result.pValue(2);
-formula = 'spike ~ sum_curv + head_distance + (1|behavior_states) + (sum_curv-1|behavior_states) + (head_distance-1|behavior_states) + (head_angle-1|behavior_states)';
-lme1 = fitlme(tbl,formula);
-result = compare(lme,lme1);%,'CheckNesting',true);
-pValue(i,3) = result.pValue(2);
-% glme = fitglme(tbl,formula,'Distribution','Gamma','link',0.5);
+    tbl = table(spike_raw(i,:)',sum_curv_fluo,param_head_dist_fluo,param_head_angle_fluo,categorical(index),'VariableNames',{'spike','sum_curv','head_distance','head_angle','behavior_states'});
+    formula = 'spike ~ sum_curv + head_distance + (1|behavior_states)';
+    lme = fitlme(tbl,formula);
+    formula = 'spike ~ sum_curv + head_distance + (1|behavior_states) + (sum_curv-1|behavior_states)';
+    lme1 = fitlme(tbl,formula);
+    result = compare(lme,lme1);%,'CheckNesting',true);
+    pValue(i,1) = result.pValue(2);
+    formula = 'spike ~ sum_curv + head_distance + (1|behavior_states) + (sum_curv-1|behavior_states) + (head_distance-1|behavior_states)';
+    lme1 = fitlme(tbl,formula);
+    result = compare(lme,lme1);%,'CheckNesting',true);
+    pValue(i,2) = result.pValue(2);
+    formula = 'spike ~ sum_curv + head_distance + (1|behavior_states) + (sum_curv-1|behavior_states) + (head_distance-1|behavior_states) + (head_angle-1|behavior_states)';
+    lme1 = fitlme(tbl,formula);
+    result = compare(lme,lme1);%,'CheckNesting',true);
+    pValue(i,3) = result.pValue(2);
+    % glme = fitglme(tbl,formula,'Distribution','Gamma','link',0.5);
 end
 %%
 %find regions for each factor
@@ -134,10 +134,10 @@ figure,hold on;
 color = brewermap(size(p_anovan,2),'Set1');
 [nrow,ncol] = arrange_subplots(size(p_anovan,2),[1 1]);
 for i=1:size(p_anovan,2)
-focus_idx = p_anovan(:,i)<(0.001/numRegion);
-subplot(nrow,ncol,i),hold on;
-scatter3(center(:,1),center(:,2),center(:,3),10,'k');
-scatter3(center(focus_idx,1),center(focus_idx,2),center(focus_idx,3),10,color(i,:),'filled');
+    focus_idx = p_anovan(:,i)<(0.001/numRegion);
+    subplot(nrow,ncol,i),hold on;
+    scatter3(center(:,1),center(:,2),center(:,3),10,'k');
+    scatter3(center(focus_idx,1),center(focus_idx,2),center(focus_idx,3),10,color(i,:),'filled');
 end
 %%
 figure,
@@ -150,7 +150,7 @@ color = brewermap(k,'Set1');
 for i=1:size(p_anovan,2)
     mask = find(p_anovan(:,i)<(0.001/numRegion));
     spike_tmp = spike_raw(mask,:)';
-    corr = corrcoef(spike_tmp);%this is not good because 
+    corr = corrcoef(spike_tmp);%this is not good because
     Z = linkage(squareform(abs(corr-1)),'complete');
     figure,
     subplot(1,3,1),dendrogram(Z);
@@ -208,9 +208,9 @@ spike_raw_tight = spike_raw(:,valid_idx);
 figure,colormap('jet');
 for i=1:length(valid_idx)
     caxis([min(spike_raw_tight(region_idx,:)) max(spike_raw_tight(region_idx,:))]);
-polarscatter(deg2rad(param_head_angle_tight(i)),param_head_dist_tight(i),10,spike_raw_tight(region_idx,i),marker{i});
-hold on;
-pause(0.05);
+    polarscatter(deg2rad(param_head_angle_tight(i)),param_head_dist_tight(i),10,spike_raw_tight(region_idx,i),marker{i});
+    hold on;
+    pause(0.05);
 end
 %%
 region_idx= distance_idx(randperm(length(distance_idx),1));
@@ -275,7 +275,7 @@ period = idx(find([0;diff(idx)]>50));
 period_len = median(diff(period));
 %%
 spike_raw_focus = spike_raw(:,focus_idx);
-spike_raw_period = arrayfun(@(i) spike_raw_focus(:,i+[1:period_len]),period(1:end-1),'un',0);
+spike_raw_period = arrayfun(@(i) spike_raw_focus(:,i+[1:period_len]),period(1:end),'un',0);
 spike_raw_period = cat(3,spike_raw_period{:});%region x len x trial
 spike_raw_period_ave = median(spike_raw_period,3);
 X = zeros(size(sMatrix_total,1),period_len);
@@ -291,5 +291,142 @@ param_head_dist_period = arrayfun(@(i) param_head_dist_focus(i+[1:period_len]),p
 param_head_dist_period = mean(cat(2,param_head_dist_period{:}),2);
 param_head_angle_period = arrayfun(@(i) param_head_angle_focus(i+[1:period_len]),period(1:end-1),'un',0);
 param_head_angle_period = mean(cat(2,param_head_angle_period{:}),2);
+sum_curv_focus = sum_curv_fluo(focus_idx);
+sum_curv_period = arrayfun(@(i) sum_curv_focus(i+[1:period_len]),period,'un',0);
+sum_curv_period = mean(cat(2,sum_curv_period{}))
 plot_neural_activity_with_param_pos(X,center,param_head_angle_period,param_head_dist_period,angle_data_period,'_201117_period_median');
 %%
+roi = 2457;
+figure,plot(squeeze(spike_raw_period(1962,:,:)));%time x trial
+%%
+%how many convergence trials in these periodical trials
+[lia,locb] = ismember(hunting_bout_fluo_idx_whole,focus_idx);
+locb = locb(lia);
+tmp = (period - [1:period_len])';
+converge_period = arrayfun(@(i) length(intersect(locb,tmp(:,i)))>0,1:size(tmp,2));
+figure,
+pie([nnz(converge_period) nnz(~converge_period)]);
+legend({'convergence','nonconverge'});
+title('Trial property across periodical trials');
+%%
+disp('running...');
+spike_raw_period_ave = median(spike_raw_period(:,:,converge_period),3);
+X = zeros(size(sMatrix_total,1),period_len);
+X(remain_region,:) = spike_raw_period_ave;
+param_head_dist_period = arrayfun(@(i) param_head_dist_focus(i+[1:period_len]),period(converge_period),'un',0);
+param_head_dist_period = mean(cat(2,param_head_dist_period{:}),2);
+param_head_angle_period = arrayfun(@(i) param_head_angle_focus(i+[1:period_len]),period(converge_period),'un',0);
+param_head_angle_period = mean(cat(2,param_head_angle_period{:}),2);
+angle_data_period = arrayfun(@(i) angle_data_focus(i+[1:period_len],:),period(converge_period),'un',0);
+angle_data_period = mean(cat(3,angle_data_period{:}),3);%time x tailx trial
+plot_neural_activity_with_param_pos(X,center,param_head_angle_period,param_head_dist_period,angle_data_period,'_201117_period_median_converge');
+spike_raw_period_ave = median(spike_raw_period(:,:,~converge_period),3);
+X = zeros(size(sMatrix_total,1),period_len);
+X(remain_region,:) = spike_raw_period_ave;
+param_head_dist_period = arrayfun(@(i) param_head_dist_focus(i+[1:period_len]),period(~converge_period),'un',0);
+param_head_dist_period = mean(cat(2,param_head_dist_period{:}),2);
+param_head_angle_period = arrayfun(@(i) param_head_angle_focus(i+[1:period_len]),period(~converge_period),'un',0);
+param_head_angle_period = mean(cat(2,param_head_angle_period{:}),2);
+angle_data_period = arrayfun(@(i) angle_data_focus(i+[1:period_len],:),period(~converge_period),'un',0);
+angle_data_period = mean(cat(3,angle_data_period{:}),3);%time x tailx trial
+plot_neural_activity_with_param_pos(X,center,param_head_angle_period,param_head_dist_period,angle_data_period,'_201117_period_median_nonconverge');
+%%
+trial_idx = 1:length(converge_period);
+%tuning angle mapping
+angle_data_period = arrayfun(@(i) angle_data_focus(i+[1:period_len],:),period(trial_idx),'un',0);
+angle_data_period = cat(3,angle_data_period{:});%time x tailx trial
+param_head_dist_focus = param_head_dist_fluo(focus_idx);
+param_head_angle_focus = param_head_angle_fluo(focus_idx);
+param_head_dist_period = arrayfun(@(i) param_head_dist_focus(i+[1:period_len]),period(trial_idx),'un',0);
+param_head_dist_period = reshape(cat(2,param_head_dist_period{:}),[],1);
+param_head_angle_period = arrayfun(@(i) param_head_angle_focus(i+[1:period_len]),period(trial_idx),'un',0);
+param_head_angle_period = reshape(cat(2,param_head_angle_period{:}),[],1);
+
+[N,bin] = discretize(param_head_angle_period,[min(param_head_angle_period):5:max(param_head_angle_period)+5]);
+bin = mean([bin(1:end-1)' bin(2:end)'],2);
+count_N = histcounts(N,'BinWidth',1);
+bin(find(count_N<90)) = [];%delete bins with samples less than 100
+[lia,locb] = ismember(N,find(count_N<90));
+N(lia) = [];
+unique(N)
+spike_tmp = reshape(permute(spike_raw_period(:,:,trial_idx),[2 3 1]),period_len*length(period(trial_idx)),[]);
+spike_tmp(lia,:) = [];
+response_curve = arrayfun(@(r) arrayfun(@(i) quantile(spike_tmp(N==i,r),.75),row2col(unique(N))),1:size(spike_tmp,2),'un',0);
+response_curve = cat(2,response_curve{:});%angle x region
+
+gaussEqn = 'a*exp(-((x-b)/c)^2)+d';
+[~,I] = arrayfun(@(i) max(response_curve(:,i)),1:size(response_curve,2));
+[fitobject,gof] = arrayfun(@(i) fit(row2col(bin),response_curve(:,i),gaussEqn,'StartPoint',[1 bin(I(i)) 1 0]),1:size(response_curve,2),'un',0);
+r2 = cellfun(@(x) x.rsquare,gof);
+r2(r2<=0) = 0;
+center_angle = cellfun(@(x) x.b,fitobject);
+
+X = zeros(size(sMatrix_total,1),1);
+X(remain_region) = r2;
+X(isnan(X))=0;
+Y = zeros(size(sMatrix_total,1),1);
+Y(remain_region) = center_angle;
+figure,hold on;
+[bin_center,X_bin] = map_3dTO2d(center,[X Y]);
+scatter(bin_center(:,1),bin_center(:,2),mapminmax(X_bin(:,1)',1,10),X_bin(:,2),'filled');
+colormap('cool');cbar = colormap;
+caxis([-max(abs(X_bin(:,2))) max(abs(X_bin(:,2)))]);
+view(90,90);
+title(cbar,'tuned angle');
+title('tuning mapping by gaussian function (size determined by rsquare)');
+%%
+%calculate the mixing degree along the longitudal axis
+left_region = bin_center(:,2)<150;
+right_region = bin_center(:,2)>150;
+[N_x,bin_x] = discretize(bin_center(:,1),[min(bin_center(:,1)):10:max(bin_center(:,1))]);
+left_lateral_idx = zeros(length(bin_x)-1,1);
+for i=1:length(bin_x)-1
+    tmp_x = X_bin(N_x==i&left_region,1)>0.5;
+    tmp_y = sign(X_bin(N_x==i&left_region,2));
+    left_lateral_idx(i) = nnz(tmp_y(tmp_x)<0)/nnz(tmp_y(tmp_x)>0);
+end
+right_lateral_idx = zeros(length(bin_x)-1,1);
+for i=1:length(bin_x)-1
+    tmp_x = X_bin(N_x==i&right_region,1)>0.5;
+    tmp_y = sign(X_bin(N_x==i&right_region,2));
+    right_lateral_idx(i) = nnz(tmp_y(tmp_x)<0)/nnz(tmp_y(tmp_x)>0);
+end
+figure,
+plot(bin_x(1:end-1),left_lateral_idx);hold on;
+plot(bin_x(1:end-1),right_lateral_idx);
+xlabel('y position');
+ylabel('laterality index (#right/#left)');
+legend({'left hemi','right hemi'});
+axis tight;
+%%
+left_region = center(:,2)<150;
+right_region = center(:,2)>150;
+[N_x,bin_x] = discretize(center(:,1),[min(center(:,1)):10:max(center(:,1))]);
+[N_z,bin_z] = discretize(center(:,3),[min(center(:,3)):10:max(center(:,3))]);
+left_lateral_idx = zeros(length(bin_x)-1,length(bin_z)-1);
+for i=1:length(bin_x)-1
+    for j=1:length(bin_z)-1
+        tmp_x = X(N_x==i&N_z==j&left_region)>0.5;
+        tmp_y = sign(Y(N_x==i&N_z==j&left_region));
+        left_lateral_idx(i,j) = nnz(tmp_y(tmp_x)<0)/length(tmp_y(tmp_x));
+    end
+end
+right_lateral_idx = zeros(length(bin_x)-1,length(bin_z)-1);
+for i=1:length(bin_x)-1
+    for j=1:length(bin_z)-1
+    tmp_x = X(N_x==i&N_z==j&right_region)>0.5;
+    tmp_y = sign(Y(N_x==i&N_z==j&right_region));
+    right_lateral_idx(i,j) = nnz(tmp_y(tmp_x)<0)/length(tmp_y(tmp_x));
+    end
+end
+figure,
+subplot(1,2,1),
+img = imagesc(left_lateral_idx,'AlphaData',~isnan(left_lateral_idx));
+set(gca,'XTick',[1 length(bin_z)-1],'XTickLabel',{'ventral','dorsal'},'YTick',[1 length(bin_x)-1],'YTickLabel',{'rostral','caudal'});
+cbar = colorbar;title(cbar,'left-prey laterality index');
+title('left hemi');
+subplot(1,2,2),
+imagesc(right_lateral_idx,'AlphaData',~isnan(left_lateral_idx));
+title('right hemi');
+%%
+%tail swing and param angle correlation throughout the periodical movement
