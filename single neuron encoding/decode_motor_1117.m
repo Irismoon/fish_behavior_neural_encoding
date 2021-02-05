@@ -46,3 +46,6 @@ for i=1:8
 end
 xlabel('sum curv');ylabel('neural activity');
 sgtitle('inferior olive tuning to tail');
+%%
+%1.classify movement
+%2.segment neural activity according to movement class

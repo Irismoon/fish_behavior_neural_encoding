@@ -13,7 +13,8 @@ spike_raw = sMatrix_total;
 discard_region = find(sum(sMatrix_total,2)==0);
 remain_region = setdiff(1:size(sMatrix_total,1),discard_region)';
 spike_raw(discard_region,:) = [];
-center(discard_region,:) = [];
+center_part = center;
+center_part(discard_region,:) = [];
 delay = 3;
 [numRegion,numTime] = size(spike_raw);
 k = 5;
@@ -58,6 +59,8 @@ param_head_angle_fluo = param_head_angle_all(align_with_fluo_low==1);
 param_head_angle_fluo = param_head_angle_fluo(1:5:end-5);
 angle_data = angle_data(align_with_fluo_low==1,:);
 angle_data_fluo = angle_data(1:5:end-5,:);
+sum_curv = sum_curv(align_with_fluo_low==1);
+sum_curv_fluo = sum_curv(1:5:end-5);
 figure,hold on;
 histogram(param_head_dist_fluo(hunting_bout_fluo_idx_whole),'BinWidth',10,'Normalization','probability');hold on;
 histogram(param_head_dist_fluo(spon_bout_fluo_idx_whole),'BinWidth',10,'Normalization','probability');
@@ -67,9 +70,7 @@ xlabel('prey distance');ylabel('probability');
 p1 = ranksum(param_head_dist_fluo(hunting_bout_fluo_idx_whole),param_head_dist_fluo(spon_bout_fluo_idx_whole))
 p2 = ranksum(param_head_dist_fluo(spon_bout_fluo_idx_whole),param_head_dist_fluo(rest_bout_fluo_idx(randperm(length(rest_bout_fluo_idx),length(spon_bout_fluo_idx_whole)))))
 %p2 is small because of the large sample size
-%%
-sum_curv = sum_curv(align_with_fluo_low==1);
-sum_curv_fluo = sum_curv(1:5:end-5);
+
 %%
 index = zeros(numTime,1);
 index(hunting_bout_fluo_idx_whole) = 1;
@@ -263,6 +264,12 @@ for i=1:size(imf,2)
 end
 nexttile
 plot(param_head_angle_fluo(focus_idx));
+spike_raw_focus = spike_raw(:,focus_idx);
+angle_data_focus = angle_data_fluo(focus_idx,:);
+param_head_dist_focus = param_head_dist_fluo(focus_idx);
+param_head_angle_focus = param_head_angle_fluo(focus_idx);
+sum_curv_focus = sum_curv_fluo(focus_idx);
+
 %%
 figure,
 plot(imf(:,5))
@@ -274,26 +281,22 @@ idx = find(phase>3);
 period = idx(find([0;diff(idx)]>50));
 period_len = median(diff(period));
 %%
-spike_raw_focus = spike_raw(:,focus_idx);
-spike_raw_period = arrayfun(@(i) spike_raw_focus(:,i+[1:period_len]),period(1:end),'un',0);
+disp('running...');
+period_idx = 1:length(period);
+spike_raw_period = arrayfun(@(i) spike_raw_focus(:,i+[1:period_len]),period(period_idx),'un',0);
 spike_raw_period = cat(3,spike_raw_period{:});%region x len x trial
 spike_raw_period = spike_raw_period./(0.0000001+max(spike_raw_period,[],2));
+% spike_raw_period_ave = median(spike_raw_period,3);%
 spike_raw_period_ave = quantile(spike_raw_period,.75,3);
 X = zeros(size(sMatrix_total,1),period_len);
 X(remain_region,:) = spike_raw_period_ave;
 generate_MIP(X,sessionID,fishID,'_period_median');
-%%
-period_idx = 1:length(period);
-angle_data_focus = angle_data_fluo(focus_idx,:);
 angle_data_period = arrayfun(@(i) angle_data_focus(i+[1:period_len],:),period(period_idx),'un',0);
 angle_data_period = mean(cat(3,angle_data_period{:}),3);%time x tailx trial
-param_head_dist_focus = param_head_dist_fluo(focus_idx);
-param_head_angle_focus = param_head_angle_fluo(focus_idx);
 param_head_dist_period = arrayfun(@(i) param_head_dist_focus(i+[1:period_len]),period(period_idx),'un',0);
 param_head_dist_period = mean(cat(2,param_head_dist_period{:}),2);
 param_head_angle_period = arrayfun(@(i) param_head_angle_focus(i+[1:period_len]),period(period_idx  ),'un',0);
 param_head_angle_period = mean(cat(2,param_head_angle_period{:}),2);
-sum_curv_focus = sum_curv_fluo(focus_idx);
 sum_curv_period = arrayfun(@(i) sum_curv_focus(i+[1:period_len]),period(period_idx),'un',0);
 sum_curv_period = mean(cat(2,sum_curv_period{:}),2);
 plot_neural_activity_with_param_pos(X,center,param_head_angle_period,param_head_dist_period,angle_data_period,'_201117_period_median');
@@ -302,10 +305,12 @@ roi = 2457;
 figure,plot(squeeze(spike_raw_period(1962,:,:)));%time x trial
 %%
 %how many convergence trials in these periodical trials
-[lia,locb] = ismember(hunting_bout_fluo_idx_whole,focus_idx);
-locb = locb(lia);
-tmp = (period - [1:period_len])';
-converge_period = arrayfun(@(i) length(intersect(locb,tmp(:,i)))>0,1:size(tmp,2));
+load(fullfile(getpath('behavior','201117','1'),'high_analysis'),'conv_or_not');
+idx = find(align_with_fluo_low); 
+idx = idx(1:5:end-5);
+conv_fluo = conv_or_not(idx);
+period_idx = period + [-10:period_len];
+converge_period = arrayfun(@(i) nnz(conv_fluo(focus_idx(period_idx(i,:))))>0,1:size(period_idx,1));
 figure,
 pie([nnz(converge_period) nnz(~converge_period)]);
 legend({'convergence','nonconverge'});
@@ -313,6 +318,7 @@ title('Trial property across periodical trials');
 %%
 disp('running...');
 spike_raw_period_ave = quantile(spike_raw_period(:,:,converge_period),.75,3);
+% spike_raw_period_ave = median(spike_raw_period(:,:,converge_period),3);
 X = zeros(size(sMatrix_total,1),period_len);
 X(remain_region,:) = spike_raw_period_ave;
 param_head_dist_period = arrayfun(@(i) param_head_dist_focus(i+[1:period_len]),period(converge_period),'un',0);
@@ -322,6 +328,7 @@ param_head_angle_period = mean(cat(2,param_head_angle_period{:}),2);
 angle_data_period = arrayfun(@(i) angle_data_focus(i+[1:period_len],:),period(converge_period),'un',0);
 angle_data_period = mean(cat(3,angle_data_period{:}),3);%time x tailx trial
 plot_neural_activity_with_param_pos(X,center,param_head_angle_period,param_head_dist_period,angle_data_period,'_201117_period_75quantile_converge');
+% spike_raw_period_ave = median(spike_raw_period(:,:,~converge_period),3);
 spike_raw_period_ave = quantile(spike_raw_period(:,:,~converge_period),.75,3);
 X = zeros(size(sMatrix_total,1),period_len);
 X(remain_region,:) = spike_raw_period_ave;
@@ -333,22 +340,124 @@ angle_data_period = arrayfun(@(i) angle_data_focus(i+[1:period_len],:),period(~c
 angle_data_period = mean(cat(3,angle_data_period{:}),3);%time x tailx trial
 plot_neural_activity_with_param_pos(X,center,param_head_angle_period,param_head_dist_period,angle_data_period,'_201117_period_75quantile_nonconverge');
 %%
-trial_idx = 1:length(converge_period);
+% trial_idx = 1:length(converge_period);
+trial_idx = ~converge_period;
+thld = 90;
 %tuning angle mapping
-angle_data_period = arrayfun(@(i) angle_data_focus(i+[1:period_len],:),period(trial_idx),'un',0);
-angle_data_period = cat(3,angle_data_period{:});%time x tailx trial
-param_head_dist_focus = param_head_dist_fluo(focus_idx);
-param_head_angle_focus = param_head_angle_fluo(focus_idx);
-param_head_dist_period = arrayfun(@(i) param_head_dist_focus(i+[1:period_len]),period(trial_idx),'un',0);
-param_head_dist_period = reshape(cat(2,param_head_dist_period{:}),[],1);
+[r2_part,center_angle_part,r2_whole,center_angle_whole] = tuning_map(trial_idx,thld);
+figure,hold on;
+[bin_center,X_bin] = map_3dTO2d(center,[r2_whole center_angle_whole]);
+scatter(bin_center(:,1),bin_center(:,2),mapminmax(X_bin(:,1)',1,10),X_bin(:,2),'filled');
+colormap('cool');cbar = colormap;
+caxis([-max(abs(X_bin(:,2))) max(abs(X_bin(:,2)))]);
+view(90,90);
+title(cbar,'tuned angle');
+title('tuning mapping by gaussian function (size determined by rsquare)');
+%%
+[left_lateral_idx,right_lateral_idx,bin_x] = laterality_1d();
+figure,
+plot(bin_x(1:end-1),left_lateral_idx);hold on;
+plot(bin_x(1:end-1),right_lateral_idx);
+xlabel('y position');
+ylabel('laterality index (#right/#left)');
+legend({'left hemi','right hemi'});
+axis tight;
+%%
+[left_lateral_idx,right_lateral_idx,bin_x,bin_z] = laterality_2d();
+figure,
+subplot(1,2,1),
+img = imagesc(left_lateral_idx,'AlphaData',~isnan(left_lateral_idx));
+set(gca,'XTick',[1 length(bin_z)-1],'XTickLabel',{'ventral','dorsal'},'YTick',[1 length(bin_x)-1],'YTickLabel',{'rostral','caudal'});
+cbar = colorbar;title(cbar,'left-prey laterality index');
+title('left hemi');
+subplot(1,2,2),
+imagesc(right_lateral_idx,'AlphaData',~isnan(left_lateral_idx));
+title('right hemi');
+%%
+trial_idx = converge_period;
+thld = 90;
+%tuning angle mapping
+[r2_part_conv,center_angle_part_conv,r2_whole_conv,center_angle_whole_conv] = tuning_map(trial_idx,thld);
+trial_idx = ~trial_idx;
+thld = 90;
+%tuning angle mapping
+[r2_part_nonconv,center_angle_part_nonconv,r2_whole_nonconv,center_angle_whole_nonconv] = tuning_map(trial_idx,thld);
+p_orig = ranksum(r2_part_conv,r2_part_nonconv)
+figure,histogram(r2_part_conv);hold on;histogram(r2_part_nonconv);
+legend({'convergence','nonconvergence'});
+figure,subplot(1,2,1),histogram2(r2_part_conv,r2_part_nonconv,[10 10]);
+xlabel('conv');ylabel('nonconv');title('r2')
+subplot(1,2,2),histogram2(center_angle_part_conv,center_angle_part_nonconv,[10 10]);
+xlabel('conv');ylabel('nonconv');title('tuned angle');
+hc_ln_idx = find(r2_part_conv>0.9&r2_part_nonconv<0.1);
+figure,scatter3(center(:,1),center(:,2),center(:,3),10);
+hold on;
+scatter3(center(remain_region(hc_ln_idx),1),center(remain_region(hc_ln_idx),2),center(remain_region(hc_ln_idx),3),10,'r','filled');
+hn_lc_idx = find(r2_part_conv<0.1&r2_part_nonconv>0.9);
+figure,scatter3(center(:,1),center(:,2),center(:,3),10);
+hold on;
+scatter3(center(remain_region(hn_lc_idx),1),center(remain_region(hn_lc_idx),2),center(remain_region(hn_lc_idx),3),10,'r','filled');
+title('r2: high nonconv & low conv');
+hc_hn_idx = r2_part_conv>0.9&r2_part_nonconv>0.9;
+figure,scatter3(center(:,1),center(:,2),center(:,3),10);
+hold on;
+scatter3(center(remain_region(hc_hn_idx),1),center(remain_region(hc_hn_idx),2),center(remain_region(hc_hn_idx),3),10,'r','filled');
+figure,
+scatter3(center(remain_region,1),center(remain_region,2),center(remain_region,3),mapminmax((max([r2_part_conv r2_part_nonconv],[],2)+0.00001)',3,10)',abs(r2_part_conv-r2_part_nonconv),'filled')
+cbar = colorbar;
+title(cbar,'abs(r2_{conv}-r2_{nonconv})');
+%%
+r2_part_conv_rand = zeros(numRegion,1000);
+r2_part_nonconv_rand = r2_part_conv;
+for i=1:1000
+    if mod(i,20)==0 disp('20 runs done!'); end
+trial_idx = converge_period(randperm(length(converge_period),length(converge_period)));
+thld = 90;
+%tuning angle mapping
+[r2_part_conv_rand(:,i),center_angle_part_conv,r2_whole_conv,center_angle_whole_conv] = tuning_map(trial_idx,thld);
+trial_idx = ~trial_idx;
+thld = 90;
+%tuning angle mapping
+[r2_part_nonconv_rand(:,i),center_angle_part_nonconv,r2_whole_nonconv,center_angle_whole_nonconv] = tuning_map(trial_idx,thld);
+end
+p = zeros(size(r2_part_conv_rand,2),1);
+for i=1:size(r2_part_conv_rand,2)
+    p(i) = ranksum(r2_part_conv_rand(:,i),r2_part_nonconv_rand(:,i));
+end
+mean(p<p_orig)
+%%
+%to test if the difference between converge and nonconverge is due to the
+%uneven angle range between them
+test_converge_period= [true(32,1);false(31,1)];
+test_converge_period = test_converge_period(randperm(63,63));
+trial_idx = test_converge_period;
+thld = 90;
+%tuning angle mapping
+[r2_part_conv_even,center_angle_part_conv,r2_whole_conv,center_angle_whole_conv] = tuning_map(trial_idx,thld);
+trial_idx = ~trial_idx;
+thld = 90;
+%tuning angle mapping
+[r2_part_nonconv_even,center_angle_part_nonconv,r2_whole_nonconv,center_angle_whole_nonconv] = tuning_map(trial_idx,thld);
+figure,
+scatter3(center(remain_region,1),center(remain_region,2),center(remain_region,3),mapminmax((max([r2_part_conv_even r2_part_nonconv_even],[],2)+0.00001)',3,10)',abs(r2_part_conv_even-r2_part_nonconv_even),'filled')
+cbar = colorbar;
+title(cbar,'abs(r2_{conv}-r2_{nonconv})');
+
+%%
+function [r2,center_angle,X,Y] = tuning_map(trial_idx,thld)
+disp('starting...');
+period = evalin('base','period');
+period_len = evalin('base','period_len');
+param_head_angle_focus = evalin('base','param_head_angle_focus');
 param_head_angle_period = arrayfun(@(i) param_head_angle_focus(i+[1:period_len]),period(trial_idx),'un',0);
 param_head_angle_period = reshape(cat(2,param_head_angle_period{:}),[],1);
+spike_raw_period = evalin('base','spike_raw_period');
 
 [N,bin] = discretize(param_head_angle_period,[min(param_head_angle_period):5:max(param_head_angle_period)+5]);
 bin = mean([bin(1:end-1)' bin(2:end)'],2);
 count_N = histcounts(N);
-bin(find(count_N<100)) = [];%delete bins with samples less than 100
-[lia,locb] = ismember(N,find(count_N<100));
+bin(find(count_N<thld)) = [];%delete bins with samples less than 100
+[lia,locb] = ismember(N,find(count_N<thld));
 N(lia) = [];
 unique(N)
 spike_tmp = reshape(permute(spike_raw_period(:,:,trial_idx),[2 3 1]),period_len*length(period(trial_idx)),[]);
@@ -363,21 +472,18 @@ r2 = row2col(cellfun(@(x) x.rsquare,gof),1);
 r2(r2<=0) = 0;
 center_angle = cellfun(@(x) x.b,fitobject);
 
+sMatrix_total = evalin('base','sMatrix_total');
+remain_region = evalin('base','remain_region');
 X = zeros(size(sMatrix_total,1),1);
 X(remain_region) = r2;
 X(isnan(X))=0;
 Y = zeros(size(sMatrix_total,1),1);
 Y(remain_region) = center_angle;
-figure,hold on;
-[bin_center,X_bin] = map_3dTO2d(center,[X Y]);
-scatter(bin_center(:,1),bin_center(:,2),mapminmax(X_bin(:,1)',1,10),X_bin(:,2),'filled');
-colormap('cool');cbar = colormap;
-caxis([-max(abs(X_bin(:,2))) max(abs(X_bin(:,2)))]);
-view(90,90);
-title(cbar,'tuned angle');
-title('tuning mapping by gaussian function (size determined by rsquare)');
-%%
+disp('done!');
+end
+function [left_lateral_idx,right_lateral_idx,bin_x] = laterality_1d()
 %calculate the mixing degree along the longitudal axis
+bin_center = eval('base','bin_center');
 left_region = bin_center(:,2)<150;
 right_region = bin_center(:,2)>150;
 [N_x,bin_x] = discretize(bin_center(:,1),[min(bin_center(:,1)):10:max(bin_center(:,1))]);
@@ -393,14 +499,9 @@ for i=1:length(bin_x)-1
     tmp_y = sign(X_bin(N_x==i&right_region,2));
     right_lateral_idx(i) = nnz(tmp_y(tmp_x)<0)/nnz(tmp_y(tmp_x)>0);
 end
-figure,
-plot(bin_x(1:end-1),left_lateral_idx);hold on;
-plot(bin_x(1:end-1),right_lateral_idx);
-xlabel('y position');
-ylabel('laterality index (#right/#left)');
-legend({'left hemi','right hemi'});
-axis tight;
-%%
+end
+function [left_lateral_idx,right_lateral_idx,bin_x,bin_z] = laterality_2d()
+center = eval('base','center');
 left_region = center(:,2)<150;
 right_region = center(:,2)>150;
 [N_x,bin_x] = discretize(center(:,1),[min(center(:,1)):10:max(center(:,1))]);
@@ -421,14 +522,4 @@ for i=1:length(bin_x)-1
     right_lateral_idx(i,j) = nnz(tmp_y(tmp_x)<0)/length(tmp_y(tmp_x));
     end
 end
-figure,
-subplot(1,2,1),
-img = imagesc(left_lateral_idx,'AlphaData',~isnan(left_lateral_idx));
-set(gca,'XTick',[1 length(bin_z)-1],'XTickLabel',{'ventral','dorsal'},'YTick',[1 length(bin_x)-1],'YTickLabel',{'rostral','caudal'});
-cbar = colorbar;title(cbar,'left-prey laterality index');
-title('left hemi');
-subplot(1,2,2),
-imagesc(right_lateral_idx,'AlphaData',~isnan(left_lateral_idx));
-title('right hemi');
-%%
-%tail swing mapping
+end
