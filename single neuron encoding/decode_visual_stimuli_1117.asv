@@ -550,22 +550,19 @@ xlabel('p value');
 title(['#p_{rand}<p_{orig}:' num2str(nnz(p_rand<p_orig)/length(p_rand))]);
 %%
 figure,
-scatter3(center(remain_region,1),center(remain_region,2),center(remain_region,3),mapminmax((max([r2_conv_orig r2_nonconv_orig],[],2)+0.00001)',3,10)',r2_conv_orig-r2_nonconv_orig,'filled')
+scatter3(center(remain_region,1),center(remain_region,2),center(remain_region,3),mapminmax((max([r2_conv_orig r2_nonconv_orig],[],2)+0.00001)',3,10)',abs(r2_conv_orig-r2_nonconv_orig),'filled')
 cbar = colorbar;
 title(cbar,'abs(r2_{conv}-r2_{nonconv})');
 figure,
-scatter3(center(remain_region,1),center(remain_region,2),center(remain_region,3),mapminmax((max(r2_rand(:,:),[],2)+0.00001)',3,10)',std(abs(r2_rand(:,:,1)-r2_rand(:,:,2)),[],2),'filled')
+scatter3(center(remain_region,1),center(remain_region,2),center(remain_region,3),mapminmax((max(r2_rand(:,:),[],2)+0.00001)',3,10)',abs(r2_rand(:,:,1)-r2_rand(:,:,2)),'filled')
 cbar = colorbar;
 title(cbar,'abs(r2_{conv}-r2_{nonconv})');
 title('random');
 %%
 %bootstrap to get a comprehensive result
-% trial_idx = find(converge_period);
-trial_idx = 1:length(converge_period);
-[bootstat] = bootstrp(100,@(x) tuning_map(x),trial_idx);
-r2_m = median(bootstat,1)./std(bootstat,1);
-figure,
-scatter3(center(remain_region,1),center(remain_region,2),center(remain_region,3),10,r2_m,'filled');
+trial_idx = find(converge_period);
+[r2_boot,center_angle_boot,r2_whole_boot,center_angle_whole_boot] = bootstrp(100,@(x) tuning_map(x),trial_idx);
+
 %%
 function [r2,center_angle,X,Y] = tuning_map(trial_idx)
 disp('starting...');
